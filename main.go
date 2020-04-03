@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"time"
@@ -19,9 +20,11 @@ const (
 
 var update = time.NewTicker(10 * time.Second)
 
-var p = connectToEbs()
-var sum = p.GetTotalAmount()
-var count = p.GetNumberTransactions()
+// var p = connectToEbs()
+// var sum = p.GetTotalAmount()
+// var count = p.GetNumberTransactions()
+var sum float32
+var count int32
 var s store
 
 func main() {
@@ -100,8 +103,8 @@ type result struct {
 	Time  time.Time
 }
 
-func (s *store) append(d pb.TotalDonations) {
-	if d.GetNumberTransactions() != 0 || d.GetTotalAmount() != 0 {
+func (s *store) append(d pb.TotalDonations) error {
+	if d.NumberTransactions != 0 && d.TotalAmount != 0 {
 
 		s.isWorking = true
 		s.time = time.Now().UTC()
@@ -109,7 +112,9 @@ func (s *store) append(d pb.TotalDonations) {
 		s.data.NumberTransactions = d.NumberTransactions
 
 		s.result = append(s.result, *s)
+		return nil
 	}
+	return errors.New("unable to get data")
 }
 
 func (s *store) getResult() (bool, store) {
