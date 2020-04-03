@@ -50,7 +50,8 @@ func connectToEbs() *pb.TotalDonations {
 	defer cancel()
 	ebs, err := c.GetDonations(ctx, &pb.DonationURL{Url: "https://ebs-sd.com:444/StandForSudan/"})
 	if err != nil {
-		log.Fatalf("could not greet: %v", err)
+		log.Printf("could not greet: %v", err)
+		return nil
 	}
 
 	return ebs
