@@ -16,6 +16,7 @@ import (
 const (
 	address     = "localhost:50051"
 	defaultName = "world"
+	url         = "https://standforsudan.ebs-sd.com/StandForSudan/"
 )
 
 var update = time.NewTicker(10 * time.Second)
@@ -30,12 +31,12 @@ var s store
 func main() {
 	go updatePrice()
 
-	connectToEbs()
+	connectToEbs(url)
 	http.HandleFunc("/status", getEbs)
 	http.ListenAndServe(":8010", nil)
 }
 
-func connectToEbs() *pb.TotalDonations {
+func connectToEbs(url string) *pb.TotalDonations {
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
@@ -44,16 +45,15 @@ func connectToEbs() *pb.TotalDonations {
 
 	c := pb.NewRaterClient(conn)
 
-	// Contact the server and print out its response.
-
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Second)
 	defer cancel()
-	ebs, err := c.GetDonations(ctx, &pb.DonationURL{Url: "https://ebs-sd.com:444/StandForSudan/"})
+	ebs, err := c.GetDonations(ctx, &pb.DonationURL{Url: url})
 	if err != nil {
 		log.Printf("could not greet: %v", err)
 		return nil
 	}
 
+	log.Printf("Result from EBS is: %v, %v", ebs.GetTotalAmount(), ebs.GetNumberTransactions())
 	return ebs
 }
 
@@ -62,28 +62,34 @@ func updatePrice() {
 	for {
 		select {
 		case <-update.C:
-			v := connectToEbs()
-			sum = v.GetTotalAmount()
-			count = v.GetNumberTransactions()
-			s.append(pb.TotalDonations{TotalAmount: sum, NumberTransactions: count})
+			v := connectToEbs(url)
+			if v != nil {
+
+				sum = v.TotalAmount
+				count = v.NumberTransactions
+				s.append(pb.TotalDonations{TotalAmount: sum, NumberTransactions: count})
+			} else {
+				log.Printf("Null pointer here")
+			}
 		}
 	}
 }
 
 type store struct {
-	result    []store
-	isWorking bool
-	time      time.Time
-	data      *pb.TotalDonations
+	result             []store
+	isWorking          bool
+	time               time.Time
+	numberTransactions int
+	amount             int
 }
 
 func getEbs(w http.ResponseWriter, r *http.Request) {
 	if w.Header().Get("live") == "true" {
-		ebs := connectToEbs()
+		ebs := connectToEbs(url)
 		var res result
 
-		res.Count = ebs.GetNumberTransactions()
-		res.Sum = ebs.GetTotalAmount()
+		res.Count = int(ebs.GetNumberTransactions())
+		res.Sum = int(ebs.GetTotalAmount())
 		res.Time = time.Now().UTC()
 
 		buf, err := json.Marshal(&res)
@@ -99,8 +105,8 @@ func getEbs(w http.ResponseWriter, r *http.Request) {
 }
 
 type result struct {
-	Sum   float32
-	Count int32
+	Sum   int
+	Count int
 	Time  time.Time
 }
 
@@ -109,9 +115,11 @@ func (s *store) append(d pb.TotalDonations) error {
 
 		s.isWorking = true
 		s.time = time.Now().UTC()
-		s.data.TotalAmount = d.TotalAmount
-		s.data.NumberTransactions = d.NumberTransactions
+		// s.data.TotalAmount = d.TotalAmount
+		// s.data.NumberTransactions = d.NumberTransactions
 
+		s.amount = int(d.TotalAmount)
+		s.numberTransactions = int(d.NumberTransactions)
 		s.result = append(s.result, *s)
 		return nil
 	}
@@ -133,8 +141,8 @@ func (s *store) toHttp() (bool, result) {
 	if ok, d := s.getResult(); !ok {
 		return false, result{}
 	} else {
-		res.Count = d.data.NumberTransactions
-		res.Sum = d.data.TotalAmount
+		res.Count = d.numberTransactions
+		res.Sum = d.amount
 		res.Time = time.Now().UTC()
 		return true, res
 	}

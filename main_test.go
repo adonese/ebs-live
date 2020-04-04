@@ -46,10 +46,11 @@ func Test_store_append(t *testing.T) {
 	}
 
 	s := &store{
-		result:    tests[1].fields.result,
-		isWorking: tests[1].fields.isWorking,
-		time:      tests[1].fields.time,
-		data:      tests[1].fields.data,
+		result:             tests[1].fields.result,
+		isWorking:          tests[1].fields.isWorking,
+		time:               tests[1].fields.time,
+		amount:             32,
+		numberTransactions: 32,
 	}
 
 	t.Run(tests[0].name, func(t *testing.T) {
