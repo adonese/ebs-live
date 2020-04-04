@@ -133,8 +133,8 @@ func (s *store) toHttp() (bool, result) {
 	if ok, d := s.getResult(); !ok {
 		return false, result{}
 	} else {
-		res.Count = d.data.GetNumberTransactions()
-		res.Sum = d.data.GetTotalAmount()
+		res.Count = d.data.NumberTransactions
+		res.Sum = d.data.TotalAmount
 		res.Time = time.Now().UTC()
 		return true, res
 	}

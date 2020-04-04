@@ -73,4 +73,10 @@ func Test_store_append(t *testing.T) {
 
 	t.Logf("The value is: %#v\n", s.result)
 	// t.Logf("The value is: %v", s)
+	for tt := range tests {
+		c := tests[tt]
+		if c.fields.data.TotalAmount != 30 {
+			t.Fatalf("Error in append(): Got: %v, want: %v\n", c.fields.data.TotalAmount, 30)
+		}
+	}
 }
