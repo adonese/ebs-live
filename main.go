@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 	"time"
 
 	pb "github.com/adonese/microservices/raterpc/rate"
@@ -20,6 +21,7 @@ const (
 )
 
 var update = time.NewTicker(10 * time.Second)
+var dump = time.NewTicker(5 * time.Hour)
 
 // var p = connectToEbs()
 // var sum = p.GetTotalAmount()
@@ -124,6 +126,10 @@ func (s *store) append(d pb.TotalDonations) error {
 		return nil
 	}
 	return errors.New("unable to get data")
+}
+
+func (s *store) delete() {
+	s.result = nil
 }
 
 func (s *store) getResult() (bool, store) {
